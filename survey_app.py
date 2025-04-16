@@ -152,6 +152,8 @@ def show_interview_page():
     st.markdown("### Record Your Answer (Audio Only)")
     recorder_col = st.columns([3, 2, 3])[1]
 
+    can_record = st.session_state.get("mode", 1) != 2 or not st.session_state.transcribed.get(current_q_index, False)
+
     if not (st.session_state.get("mode", 1) == 1 and st.session_state.transcribed.get(current_q_index, False)):
         with recorder_col:
             audio = mic_recorder(
@@ -216,38 +218,39 @@ def show_interview_page():
             elif config["can_edit"] and st.session_state.transcript_edited.get(current_q_index, False):
                 st.info("You have already edited this transcript.")
 
-    if config["can_rerecord"] and not st.session_state.rerecorded.get(current_q_index, False) and (st.session_state.get("mode", 1) != 1 or not st.session_state.transcribed.get(current_q_index, False)):
+    stored_duration_valid = st.session_state.is_duration_valid.get(current_q_index, False)
+    is_transcribed = st.session_state.transcribed.get(current_q_index, False)
+
+    # Enable "Save and Go to Next Question" if duration is valid AND transcribed
+    next_button_enabled = stored_duration_valid and is_transcribed
+    if config["can_rerecord"] and st.session_state.transcribed.get(current_q_index, False) and not st.session_state.rerecorded.get(current_q_index, False):
         if st.button("🔁 Re-record Audio"):
             st.session_state.transcribed_text = ""
             st.session_state.recorded_audio = None
-            st.session_state.transcribed[current_q_index] = False
-            st.session_state.allow_edit[current_q_index] = False
-            st.session_state.transcript_edited.pop(current_q_index, None)
+            st.session_state.transcribed[current_q_index] = False # Reset transcribed status
+            if config["can_edit"]:
+                st.session_state.allow_edit[current_q_index] = False
+                st.session_state.transcript_edited.pop(current_q_index, None)
+            st.session_state.is_duration_valid.pop(current_q_index, None)
             st.session_state.rerecorded[current_q_index] = True
             st.success("You may now record again.")
             st.rerun()
 
     stored_duration_valid = st.session_state.is_duration_valid.get(current_q_index, False)
-    # Debugging print statements before calculating next_button_enabled
-    print(f"--- Question: {current_q_index} ---")
-    print(f"stored_duration_valid: {stored_duration_valid}")
-    print(f"st.session_state.get('mode', 1): {st.session_state.get('mode', 1)}")
-    print(f"st.session_state.transcribed.get({current_q_index}, False): {st.session_state.transcribed.get(current_q_index, False)}")
-    print(f"config['can_edit']: {config['can_edit']}")
-    print(f"st.session_state.transcript_edited.get({current_q_index}, False): {st.session_state.transcript_edited.get(current_q_index, False)}")
+    is_transcribed = st.session_state.transcribed.get(current_q_index, False)
 
     # Enable "Save and Go to Next Question" if duration is valid AND (not mode 1 OR transcribed AND (not editable OR already edited))
-    next_button_enabled = stored_duration_valid and (
-        st.session_state.get("mode", 1) != 1 or
-        (st.session_state.transcribed.get(current_q_index, False) and
-         (not config["can_edit"] or st.session_state.transcript_edited.get(current_q_index, False)))
-    )
+    # next_button_enabled = stored_duration_valid and (
+    #     st.session_state.get("mode", 1) != 1 or
+    #     (st.session_state.transcribed.get(current_q_index, False) and
+    #      (not config["can_edit"] or st.session_state.transcript_edited.get(current_q_index, False)))
+    # )
     # Enable "Save and Go to Next Question" if duration is valid AND (not mode 1 OR transcribed AND (not editable OR already edited))
-    next_button_enabled = stored_duration_valid  and (
-        st.session_state.get("mode", 1) != 1 or
-        (st.session_state.transcribed.get(current_q_index, False) and
-         (not config["can_edit"] or st.session_state.transcript_edited.get(current_q_index, False)))
-    )
+    # next_button_enabled = stored_duration_valid  and (
+    #     st.session_state.get("mode", 1) != 1 or
+    #     (st.session_state.transcribed.get(current_q_index, False) and
+    #      (not config["can_edit"] or st.session_state.transcript_edited.get(current_q_index, False)))
+    # )
     if current_q_index < len(QUESTIONS) - 1:
         if st.button("Save and Go to Next Question", disabled=not next_button_enabled):
             st.session_state.answers[current_q_index] = st.session_state.transcribed_text
@@ -257,15 +260,19 @@ def show_interview_page():
             st.session_state.edit_transcript = False
             st.session_state.rerecorded.pop(current_q_index, None)
             st.session_state.transcribed.pop(current_q_index, None)
-            st.session_state.allow_edit.pop(current_q_index, None)
-            st.session_state.transcript_edited.pop(current_q_index, None)
+            if config["can_edit"]:
+                st.session_state.allow_edit.pop(current_q_index, None)
+                st.session_state.transcript_edited.pop(current_q_index, None)
+            st.session_state.is_duration_valid.pop(current_q_index, None)
             st.rerun()
     else:
-        submit_button_enabled = stored_duration_valid  and (
-            st.session_state.get("mode", 1) != 1 or
-            (st.session_state.transcribed.get(current_q_index, False) and
-             (not config["can_edit"] or st.session_state.transcript_edited.get(current_q_index, False)))
-        )
+        # submit_button_enabled = stored_duration_valid  and (
+        #     st.session_state.get("mode", 1) != 1 or
+        #     (st.session_state.transcribed.get(current_q_index, False) and
+        #      (not config["can_edit"] or st.session_state.transcript_edited.get(current_q_index, False)))
+        # )
+        submit_button_enabled = stored_duration_valid and is_transcribed
+
         if st.button("Submit", disabled=not submit_button_enabled):
             st.session_state.answers[current_q_index] = st.session_state.transcribed_text
             st.session_state.page = "summary"
