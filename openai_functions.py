@@ -23,23 +23,23 @@ def transcribe_audio(audio_bytes):
     try:
         print("Inside")
         #Save audio bytes to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_audio:
-             temp_audio.write(audio_bytes)
-             temp_audio_path = temp_audio.name
+        # with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_audio:
+        #      temp_audio.write(audio_bytes)
+        #      temp_audio_path = temp_audio.name
             
-        # # Send to OpenAI for transcription
-        with open(temp_audio_path, "rb") as audio_file:
-             transcript = client.audio.transcriptions.create(
-                 model="whisper-1",  # Changed from gpt-4o-transcribe to whisper-1
-                 file=audio_file
-             )
+        # # # Send to OpenAI for transcription
+        # with open(temp_audio_path, "rb") as audio_file:
+        #      transcript = client.audio.transcriptions.create(
+        #          model="whisper-1",  # Changed from gpt-4o-transcribe to whisper-1
+        #          file=audio_file
+        #      )
         
-        # # Clean up temporary file
-        os.unlink(temp_audio_path)
-        print(transcript)
-        return transcript.text
+        # # # Clean up temporary file
+        # os.unlink(temp_audio_path)
+        # print(transcript)
+        # return transcript.text
 
-        #return "testing transcribed data"
+        return "testing transcribed data"
         
     except Exception as e:
         st.error(f"Error transcribing audio: {str(e)}")
@@ -69,33 +69,34 @@ def get_ai_feedback(question, answer):
         #     Format your response as a JSON object with these exact field names.
         #     """
 
-        prompt=f"""
-            Analyze the following comment:
-            "{answer}"
+        # prompt=f"""
+        #     Analyze the following comment:
+        #     "{answer}"
             
-            1. You are acting as a neutral, professional interview evaluator.
-            2. Analyze the following transcribed response to a behavioral interview question.
-                3. Generate a short and single-sentence micro feedback directed at the interviewee (second person).
-            4. The feedback should:
-                    – Be lightly encouraging but not overly enthusiastic
-                    – Remain impersonal and professional (no excessive praise or emotional language)
-                    – Not reveal whether the overall answer was good or bad
-                    – Focus on observable behavior, actions, or approach (not personal traits)
-                    – Avoid fluff or vague compliments
-                    - Add a very brief bullet points if you are focusing on multiple aspects"""
+        #     1. You are acting as a neutral, professional interview evaluator.
+        #     2. Analyze the following transcribed response to a behavioral interview question.
+        #         3. Generate a short and single-sentence micro feedback directed at the interviewee (second person).
+        #     4. The feedback should:
+        #             – Be lightly encouraging but not overly enthusiastic
+        #             – Remain impersonal and professional (no excessive praise or emotional language)
+        #             – Not reveal whether the overall answer was good or bad
+        #             – Focus on observable behavior, actions, or approach (not personal traits)
+        #             – Avoid fluff or vague compliments
+        #             - Add a very brief bullet points if you are focusing on multiple aspects"""
 
-        # Use the Responses API
-        response = client.responses.create(
-            model="gpt-4o",
-            input=prompt
-        )
+        # # Use the Responses API
+        # response = client.responses.create(
+        #     model="gpt-4o",
+        #     input=prompt
+        # )
         
-        # Get the raw content from the response
-        output_text = response.output_text
-        print("Output_text")
-        print(output_text)
-        return output_text
+        # # Get the raw content from the response
+        # output_text = response.output_text
+        # print("Output_text")
+        # print(output_text)
+        # return output_text
         
+        return "Mock Feedback"
         # # Try to find JSON content and sanitize it
         # import re
         # json_match = re.search(r'```json\s*(.*?)\s*```', output_text, re.DOTALL)

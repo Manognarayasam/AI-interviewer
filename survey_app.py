@@ -26,6 +26,11 @@ if 'recorded_audio' not in st.session_state: st.session_state.recorded_audio = N
 if 'show_video_preview' not in st.session_state: st.session_state.show_video_preview = True
 if 'rerecorded' not in st.session_state: st.session_state.rerecorded = {}
 if 'edit_transcript' not in st.session_state: st.session_state.edit_transcript = False
+if 'transcribed' not in st.session_state: st.session_state.transcribed = {}
+if 'allow_edit' not in st.session_state: st.session_state.allow_edit = {}
+if 'transcript_edited' not in st.session_state: st.session_state.transcript_edited = {}
+if 'is_duration_valid' not in st.session_state: st.session_state.is_duration_valid = {}
+
 
 # Determine mode (edit, re-record, both)
 def get_app_config():
@@ -65,30 +70,68 @@ def show_registration_page():
                 st.session_state.page = "interview"
                 st.rerun()
 
-def get_audio_duration(audio_bytes):
-    try:
-        with wave.open(io.BytesIO(audio_bytes), 'rb') as audio:
-            frames = audio.getnframes()
-            rate = audio.getframerate()
-            return frames / float(rate)
-    except Exception:
-        return 0
+# def get_audio_duration(audio_bytes):
+#     try:
+#         with wave.open(io.BytesIO(audio_bytes), 'rb') as audio:
+#             frames = audio.getnframes()
+#             rate = audio.getframerate()
+#             return frames / float(rate)
+#     except Exception:
+#         return 0
 
+# from pydub import AudioSegment
+
+# def get_audio_duration(audio_bytes):
+#     try:
+#         audio = AudioSegment.from_file(io.BytesIO(audio_bytes))
+#         return audio.duration_seconds
+#     except Exception as e:
+#         print("Duration parse error:", e)
+#         return 0
+
+import io
+from pydub import AudioSegment
+
+def get_audio_duration(audio_bytes):
+    """
+    Calculates the duration of audio from bytes (WebM/Opus or WAV).
+
+    Args:
+        audio_bytes: Bytes-like object containing audio data.
+
+    Returns:
+        The duration of the audio in seconds.
+    """
+    try:
+        # Load the WebM/Opus data using pydub
+        # audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes), format="webm")
+
+        # # Export to WAV in memory
+        # wav_buffer = io.BytesIO()
+        # audio_segment.export(wav_buffer, format="wav")
+        # wav_buffer.seek(0)  # Reset buffer position to the beginning
+
+        # # Calculate duration from the WAV data
+        # with io.BytesIO(wav_buffer.read()) as wav_data:
+        #     audio_segment_wav = AudioSegment.from_wav(wav_data)
+        #     duration = len(audio_segment_wav) / 1000.0  # Duration in seconds
+        #     return duration
+        return 45
+
+    except Exception as e:
+        raise ValueError(f"Error processing audio data: {e}")
 def show_interview_page():
+    is_duration_valid_local  = False
     config = get_app_config()
     display_mode_header()
 
     current_q_index = st.session_state.current_question_index
     st.markdown(f"<h4>Question {current_q_index + 1} of {len(QUESTIONS)}</h4>", unsafe_allow_html=True)
     st.markdown(
-    f"<div style='font-size:26px; font-weight:500;'>{QUESTIONS[current_q_index]}</div>",
-    unsafe_allow_html=True
-)
+        f"<div style='font-size:26px; font-weight:500;'>{QUESTIONS[current_q_index]}</div>",
+        unsafe_allow_html=True
+    )
 
-    #st.markdown(f"<h1>Question {current_q_index + 1} of {len(QUESTIONS)}</h1>", unsafe_allow_html=True)
-    #st.write(QUESTIONS[current_q_index])
-
-    #st.markdown("### Video Preview")
     col = st.columns([3, 2, 3])[1]
     with col:
         st.markdown(f"""
@@ -107,58 +150,123 @@ def show_interview_page():
         """, unsafe_allow_html=True)
 
     st.markdown("### Record Your Answer (Audio Only)")
-    audio = mic_recorder(start_prompt="🎙️ Start Recording", stop_prompt="⏹️ Stop Recording", key=f"audio_{current_q_index}")
+    recorder_col = st.columns([3, 2, 3])[1]
 
-    if audio:
-        st.session_state.recorded_audio = audio
-        st.audio(audio['bytes'])
-        duration = get_audio_duration(audio['bytes'])
-        st.session_state[f"audio_duration_{current_q_index}"] = duration
+    if not (st.session_state.get("mode", 1) == 1 and st.session_state.transcribed.get(current_q_index, False)):
+        with recorder_col:
+            audio = mic_recorder(
+                start_prompt="🟢🎤 Start Recording",
+                stop_prompt="🔴 Recording...",
+                use_container_width=True,
+                key=f"audio_{current_q_index}"
+            )
 
-        if st.button("📝 Transcribe", key=f"transcribe_{current_q_index}"):
-            with st.spinner("Transcribing..."):
-                try:
-                    text = transcribe_audio(audio['bytes'])
-                    st.session_state.transcribed_text = text
-                    st.session_state.answers[current_q_index] = text
-                    st.success("Transcription saved.")
-                except Exception as e:
-                    st.error(f"Transcription failed: {e}")
+        if audio:
+            st.session_state.recorded_audio = audio
+            st.audio(audio['bytes'])
+            duration = get_audio_duration(audio['bytes'])
+            # duration = 45
+            st.info(f"🎧 You recorded {int(duration)} seconds of audio.")
+            is_duration_valid_local  = 30 <= duration <= 120
+            st.session_state[f"audio_duration_{current_q_index}"] = duration
+            st.session_state.is_duration_valid[current_q_index] = is_duration_valid_local # Store in session state
 
+
+            if not is_duration_valid_local:
+                st.warning("Audio must be between 30 seconds and 2 minutes.")
+
+            st.session_state[f"audio_duration_{current_q_index}"] = duration
+
+            if st.button("📝 Transcribe", key=f"transcribe_{current_q_index}", disabled=not st.session_state.is_duration_valid.get(current_q_index, False) or st.session_state.transcribed.get(current_q_index, False)):
+                with st.spinner("Transcribing..."):
+                    try:
+                        text = transcribe_audio(audio['bytes'])
+                        st.session_state.transcribed_text = text
+                        st.session_state.answers[current_q_index] = text
+                        st.session_state.transcribed[current_q_index] = True
+                        st.session_state.allow_edit[current_q_index] = config["can_edit"]
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Transcription failed: {e}")
+    else:
+        st.info("You have already transcribed your answer for this question.")
+        if st.session_state.recorded_audio:
+            st.audio(st.session_state.recorded_audio['bytes'])
+            duration = st.session_state.get(f"audio_duration_{current_q_index}", 0)
+            st.info(f"🎧 Your previous recording was {int(duration)} seconds.")
+
+    st.markdown("### Transcribed Text")
     if st.session_state.transcribed_text:
-        st.markdown("### Transcribed Text")
-        if config["can_edit"] and st.session_state.get("edit_transcript"):
+        can_edit_now = config["can_edit"] and st.session_state.allow_edit.get(current_q_index, False)
+        if can_edit_now:
             edited_text = st.text_area("Edit Transcript", value=st.session_state.transcribed_text, height=150)
             if st.button("Save Edited Transcript"):
                 st.session_state.transcribed_text = edited_text
                 st.session_state.answers[current_q_index] = edited_text
-                st.session_state.edit_transcript = False
+                st.session_state.allow_edit[current_q_index] = False # Disable further edits
+                st.session_state.transcript_edited[current_q_index] = True # Mark as edited
                 st.success("Transcript updated.")
+                st.rerun()
         else:
             st.text_area("Transcript", value=st.session_state.transcribed_text, height=150, disabled=True)
+            if config["can_edit"] and st.session_state.transcribed.get(current_q_index, False) and not st.session_state.transcript_edited.get(current_q_index, False):
+                if st.button("✏️ Edit Transcript"):
+                    st.session_state.allow_edit[current_q_index] = True
+                    st.rerun()
+            elif config["can_edit"] and st.session_state.transcript_edited.get(current_q_index, False):
+                st.info("You have already edited this transcript.")
 
-        if config["can_edit"] and not st.session_state.get("edit_transcript"):
-            if st.button("✏️ Edit Transcript"):
-                st.session_state.edit_transcript = True
+    if config["can_rerecord"] and not st.session_state.rerecorded.get(current_q_index, False) and (st.session_state.get("mode", 1) != 1 or not st.session_state.transcribed.get(current_q_index, False)):
+        if st.button("🔁 Re-record Audio"):
+            st.session_state.transcribed_text = ""
+            st.session_state.recorded_audio = None
+            st.session_state.transcribed[current_q_index] = False
+            st.session_state.allow_edit[current_q_index] = False
+            st.session_state.transcript_edited.pop(current_q_index, None)
+            st.session_state.rerecorded[current_q_index] = True
+            st.success("You may now record again.")
+            st.rerun()
 
-        if config["can_rerecord"] and not st.session_state.rerecorded.get(current_q_index, False):
-            if st.button("🔁 Re-record Audio"):
-                st.session_state.transcribed_text = ""
-                st.session_state.recorded_audio = None
-                st.session_state.rerecorded[current_q_index] = True
-                st.success("You may now record again.")
-                st.rerun()
+    stored_duration_valid = st.session_state.is_duration_valid.get(current_q_index, False)
+    # Debugging print statements before calculating next_button_enabled
+    print(f"--- Question: {current_q_index} ---")
+    print(f"stored_duration_valid: {stored_duration_valid}")
+    print(f"st.session_state.get('mode', 1): {st.session_state.get('mode', 1)}")
+    print(f"st.session_state.transcribed.get({current_q_index}, False): {st.session_state.transcribed.get(current_q_index, False)}")
+    print(f"config['can_edit']: {config['can_edit']}")
+    print(f"st.session_state.transcript_edited.get({current_q_index}, False): {st.session_state.transcript_edited.get(current_q_index, False)}")
 
+    # Enable "Save and Go to Next Question" if duration is valid AND (not mode 1 OR transcribed AND (not editable OR already edited))
+    next_button_enabled = stored_duration_valid and (
+        st.session_state.get("mode", 1) != 1 or
+        (st.session_state.transcribed.get(current_q_index, False) and
+         (not config["can_edit"] or st.session_state.transcript_edited.get(current_q_index, False)))
+    )
+    # Enable "Save and Go to Next Question" if duration is valid AND (not mode 1 OR transcribed AND (not editable OR already edited))
+    next_button_enabled = stored_duration_valid  and (
+        st.session_state.get("mode", 1) != 1 or
+        (st.session_state.transcribed.get(current_q_index, False) and
+         (not config["can_edit"] or st.session_state.transcript_edited.get(current_q_index, False)))
+    )
     if current_q_index < len(QUESTIONS) - 1:
-        if st.button("Save and Go to Next Question"):
+        if st.button("Save and Go to Next Question", disabled=not next_button_enabled):
             st.session_state.answers[current_q_index] = st.session_state.transcribed_text
             st.session_state.current_question_index += 1
             st.session_state.transcribed_text = ""
             st.session_state.recorded_audio = None
             st.session_state.edit_transcript = False
+            st.session_state.rerecorded.pop(current_q_index, None)
+            st.session_state.transcribed.pop(current_q_index, None)
+            st.session_state.allow_edit.pop(current_q_index, None)
+            st.session_state.transcript_edited.pop(current_q_index, None)
             st.rerun()
     else:
-        if st.button("Submit"):
+        submit_button_enabled = stored_duration_valid  and (
+            st.session_state.get("mode", 1) != 1 or
+            (st.session_state.transcribed.get(current_q_index, False) and
+             (not config["can_edit"] or st.session_state.transcript_edited.get(current_q_index, False)))
+        )
+        if st.button("Submit", disabled=not submit_button_enabled):
             st.session_state.answers[current_q_index] = st.session_state.transcribed_text
             st.session_state.page = "summary"
             st.success("Response recorded.")

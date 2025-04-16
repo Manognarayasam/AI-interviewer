@@ -29,6 +29,20 @@ CUSTOM_CSS="""
         justify-content: center;
     }
 
+    /* Make the mic recorder button green by default */
+    button[data-testid="baseButton"] {
+        background-color: green !important;
+        color: white !important;
+        font-size: 18px !important;
+        border-radius: 8px !important;
+        transition: background-color 0.3s ease;
+    }
+
+    /* When recording is active, mic recorder button becomes red */
+    button[data-testid="baseButton"].stRecording {
+        background-color: red !important;
+        color: white !important;
+    }
    
 </style>
 """
