@@ -1,3 +1,4 @@
+#D:\AI interviewer_31-03\AI interviewer\AI interviewer\survey_app.py
 import streamlit as st
 st.set_page_config(page_title="AI‑Driven Mock Interview", layout="wide")
 from survey_app_modes import mode1, mode2, mode3, page_not_found

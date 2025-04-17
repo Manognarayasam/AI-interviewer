@@ -1,3 +1,4 @@
+#D:\AI interviewer_31-03\AI interviewer\AI interviewer\survey_app_modes\mode1.py
 import streamlit as st, os, io, wave
 from dotenv import load_dotenv
 from streamlit_mic_recorder import mic_recorder
@@ -5,13 +6,17 @@ from openai_functions import transcribe_audio
 from db_utils import save_survey_results
 from question import QUESTIONS
 from custom_css import CUSTOM_CSS
-from common_services import get_audio_duration
+from common_services import get_audio_duration, video_preview
 
 load_dotenv()
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 
 def display_mode_header() -> None:
+    st.markdown(
+        "<h1 style='text-align:center;'>AI‑Driven Mock Interview</h1>",
+        unsafe_allow_html=True,
+    )
     st.markdown("<h4 style='text-align:center;'>Mode 1 -Edit Once</h4>",
                 unsafe_allow_html=True)
 
@@ -25,10 +30,7 @@ EMAIL_RE = re.compile(
 
 def registration_page() -> None:
     display_mode_header()
-    st.markdown(
-        "<h1 style='text-align:center;'>AI‑Driven Mock Interview</h1>",
-        unsafe_allow_html=True,
-    )
+    
     st.warning("Make sure to use your correct email. It will be verified for the payment.")
     st.markdown("<p style='text-align: center;'>Please enter your information to begin</p>", unsafe_allow_html=True)
 
@@ -60,8 +62,12 @@ def interview_page() -> None:
     i = st.session_state.q
     question = QUESTIONS[i]
 
+    display_mode_header()
     st.markdown(f"### Question {i+1}/{len(QUESTIONS)}")
     st.markdown(f"<div style='font-size:26px'>{question}</div>", unsafe_allow_html=True)
+
+    # ── NEW ► optional live camera preview ───────────────────────────────────
+    video_preview()     # ← one‑liner; place it wherever you like
 
     # ---- Record once ---------------------------------------------------------
     if f"audio_{i}" not in st.session_state:

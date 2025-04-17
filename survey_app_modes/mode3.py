@@ -1,3 +1,5 @@
+#D:\AI interviewer_31-03\AI interviewer\AI interviewer\survey_app_modes\mode3.py
+
 # mode3.py  – User may Edit OR Re‑record (choose one)  ———————————————
 import streamlit as st, io, wave
 from dotenv import load_dotenv
@@ -14,6 +16,10 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 
 def header() -> None:
+    st.markdown(
+        "<h1 style='text-align:center;'>AI‑Driven Mock Interview</h1>",
+        unsafe_allow_html=True,
+    )
     st.markdown("<h4 style='text-align:center;'>Mode 3 – Edit OR Re‑record"
                 " (once)</h4>", unsafe_allow_html=True)
 
@@ -27,10 +33,7 @@ EMAIL_RE = re.compile(
 
 def registration() -> None:
     header()
-    st.markdown(
-        "<h1 style='text-align:center;'>AI‑Driven Mock Interview</h1>",
-        unsafe_allow_html=True,
-    )
+   
     st.warning("Make sure to use your correct email. It will be verified for the payment.")
     st.markdown("<p style='text-align: center;'>Please enter your information to begin</p>", unsafe_allow_html=True)
 
@@ -62,6 +65,8 @@ def registration() -> None:
 def interview() -> None:
     i = st.session_state.q
     question = QUESTIONS[i]
+
+    header()
 
     st.markdown(f"### Question {i+1}/{len(QUESTIONS)}")
     st.markdown(f"<div style='font-size:26px'>{question}</div>", unsafe_allow_html=True)

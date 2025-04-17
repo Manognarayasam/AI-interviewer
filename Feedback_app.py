@@ -10,6 +10,8 @@ from db_utils import save_survey_results
 from question import FEEDBACK_QUESTIONS as QUESTIONS
 from openai_functions import transcribe_audio, get_ai_feedback, motivationalFeedbackGen, informationalFeedbackGen, summarizeFeedback, analyze_transcript_feedback_3
 from custom_css import CUSTOM_CSS
+from common_services import get_audio_duration, video_preview
+
 
 load_dotenv()
 
@@ -45,17 +47,6 @@ def show_registration_page():
                 st.session_state.page = "interview"
                 st.rerun()
 
-# Audio Duration Helper
-
-def get_audio_duration(audio_bytes):
-    try:
-        with wave.open(io.BytesIO(audio_bytes), 'rb') as audio:
-            frames = audio.getnframes()
-            rate = audio.getframerate()
-            return frames / float(rate)
-    except Exception:
-        return 0
-
 # Interview Page
 
 def show_interview_page():
@@ -63,44 +54,59 @@ def show_interview_page():
     st.markdown(f"<h1>Question {current_q_index + 1} of {len(QUESTIONS)}</h1>", unsafe_allow_html=True)
     st.markdown(f"<p style='font-size: 18px; font-weight: bold;'>{QUESTIONS[current_q_index]}</p>", unsafe_allow_html=True)
 
-    #st.markdown("### Video Preview")
-    st.markdown("""
-        <div style='width: 200px; height: 150px; background-color: #000; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white;'>
-            Video Preview Only - No Recording
-        </div>
-    """, unsafe_allow_html=True)
+    video_preview()
+   
 
     st.markdown("### Record Your Answer (Audio Only)")
-    audio = mic_recorder(start_prompt="🎙️ Start Recording", stop_prompt="⏹️ Stop Recording", key=f"audio_{current_q_index}")
+    #audio = mic_recorder(start_prompt="🎙️ Start Recording", stop_prompt="⏹️ Stop Recording", key=f"audio_{current_q_index}")
 
-    if audio:
+        # --- Record answer -------------------------------------------------------
+    audio = mic_recorder(start_prompt="🎙️ Start Recording",
+                         stop_prompt="⏹️ Stop Recording",
+                         key=f"audio_{current_q_index}")
+
+    if audio:                                              # user stopped recording
         st.session_state.recorded_audio = audio
-        st.audio(audio['bytes'])
+        st.audio(audio["bytes"])
 
-        if st.button("📝 Transcribe", key=f"transcribe_{current_q_index}"):
-            with st.spinner("Transcribing..."):
-                try:
-                    text = transcribe_audio(audio['bytes'])
-                    st.session_state.answers[current_q_index] = text
-                    st.success("Transcription complete.")
-                    st.markdown("### Transcript (Read-Only)")
-                    st.text_area("", value=text, disabled=True)
-                    # summary = get_ai_feedback(QUESTIONS[current_q_index], text)
-                    summary = ""
-                    if st.session_state.feedback_type == "Feedback1":
-                        summary=motivationalFeedbackGen(text)
-                    elif st.session_state.feedback_type == "Feedback2":
-                        summary=informationalFeedbackGen(QUESTIONS[current_q_index], text)
-                    elif st.session_state.feedback_type == "Feedback3":
-                        summary=analyze_transcript_feedback_3(QUESTIONS[current_q_index], text)
-                    else:
-                        summary="You are not on a valid feedback count"                      
-                    st.session_state.feedback_summaries[current_q_index] = summary
-                    st.success("Summary generated.")
-                    st.markdown(f"**Summary for Question {current_q_index + 1}:**")
-                    st.markdown(f"*{summary}*")
-                except Exception as e:
-                    st.error(f"Transcription/feedback failed: {e}")
+        # 👇 NEW —–––––––––––––––––––––––––––––––––––––––––––––––––––
+        dur_sec = get_audio_duration(audio["bytes"])
+        st.info(f"You recorded **{int(dur_sec)} s**")
+
+        if 30 <= dur_sec <= 120:                           # ⟵ gate transcription
+            if st.button("📝 Transcribe", key=f"tr_{current_q_index}"):
+                with st.spinner("Transcribing…"):
+                    try:
+                        text = transcribe_audio(audio["bytes"])
+                        st.session_state.answers[current_q_index] = text
+                        st.success("Transcription complete.")
+
+                        st.markdown("### Transcript (read‑only)")
+                        st.text_area("", value=text, disabled=True)
+
+                        # ­‑‑‑ generate feedback exactly as before ­‑‑‑
+                        summary = ""
+                        if st.session_state.feedback_type == "Feedback1":
+                            summary = motivationalFeedbackGen(text)
+                        elif st.session_state.feedback_type == "Feedback2":
+                            summary = informationalFeedbackGen(
+                                QUESTIONS[current_q_index], text)
+                        elif st.session_state.feedback_type == "Feedback3":
+                            summary = analyze_transcript_feedback_3(
+                                QUESTIONS[current_q_index], text)
+                        else:
+                            summary = "You are not on a valid feedback count"
+
+                        st.session_state.feedback_summaries[current_q_index] = summary
+                        st.success("Summary generated.")
+                        st.markdown(f"**Summary for Question "
+                                    f"{current_q_index + 1}:**")
+                        st.markdown(f"*{summary}*")
+                    except Exception as e:
+                        st.error(f"Transcription/feedback failed: {e}")
+        else:
+            st.error("Recording must be **between 30 s and 2 min**. "
+                     "Please re‑record.")
 
     if current_q_index in st.session_state.feedback_summaries:
         if current_q_index < len(QUESTIONS) - 1:
