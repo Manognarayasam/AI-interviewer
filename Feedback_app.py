@@ -7,7 +7,7 @@ import io
 from dotenv import load_dotenv
 from streamlit_mic_recorder import mic_recorder
 from db_utils import save_survey_results
-from question import QUESTIONS
+from question import FEEDBACK_QUESTIONS as QUESTIONS
 from openai_functions import transcribe_audio, get_ai_feedback, motivationalFeedbackGen, informationalFeedbackGen, summarizeFeedback, analyze_transcript_feedback_3
 from custom_css import CUSTOM_CSS
 
