@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from streamlit_mic_recorder import mic_recorder
 from db_utils import save_survey_results
 from question import QUESTIONS
-from openai_functions import transcribe_audio, get_ai_feedback
+from openai_functions import transcribe_audio, get_ai_feedback, motivationalFeedbackGen, informationalFeedbackGen, summarizeFeedback, analyze_transcript_feedback_3
 from custom_css import CUSTOM_CSS
 
 load_dotenv()
@@ -85,8 +85,16 @@ def show_interview_page():
                     st.success("Transcription complete.")
                     st.markdown("### Transcript (Read-Only)")
                     st.text_area("", value=text, disabled=True)
-                    # summary = get_ai_feedback(QUESTIONS[current_q_index], text)["feedback"]
-                    summary = get_ai_feedback(QUESTIONS[current_q_index], text)
+                    # summary = get_ai_feedback(QUESTIONS[current_q_index], text)
+                    summary = ""
+                    if st.session_state.feedback_type == "Feedback1":
+                        summary=motivationalFeedbackGen(text)
+                    elif st.session_state.feedback_type == "Feedback2":
+                        summary=informationalFeedbackGen(QUESTIONS[current_q_index], text)
+                    elif st.session_state.feedback_type == "Feedback3":
+                        summary=analyze_transcript_feedback_3(QUESTIONS[current_q_index], text)
+                    else:
+                        summary="You are not on a valid feedback count"                      
                     st.session_state.feedback_summaries[current_q_index] = summary
                     st.success("Summary generated.")
                     st.markdown(f"**Summary for Question {current_q_index + 1}:**")
@@ -124,8 +132,11 @@ def show_summary_page():
             st.error("Oops! Something went wrong while saving.")
 
     st.markdown("### Combined Summary")
+    combined_feedback_text=""
     for i, summary in st.session_state.feedback_summaries.items():
-        st.markdown(f"**Q{i+1}:** *{summary}*")
+        #st.markdown(f"**Q{i+1}:** *{summary}*")
+        combined_feedback_text+=f"**Q{i+1}:** *{summary}* \n"
+    st.markdown(f"*{summarizeFeedback(combined_feedback_text)}*")
 
     if st.button("Start Over"):
         for key in list(st.session_state.keys()):
@@ -139,6 +150,7 @@ def main():
     for tag in ["feedback1", "feedback2", "feedback3"]:
         if tag in query_params:
             st.session_state.feedback_type = tag.capitalize()
+            print(st.session_state.feedback_type)
             break
     else:
         st.error("Missing URL parameter. Use ?feedback1, ?feedback2, or ?feedback3.")
