@@ -8,7 +8,7 @@ from openai_functions import transcribe_audio
 from db_utils import save_survey_results
 from question import QUESTIONS
 from custom_css import CUSTOM_CSS
-from common_services import get_audio_duration
+from common_services import get_audio_duration, video_preview
 
 load_dotenv()
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
@@ -68,31 +68,41 @@ def interview() -> None:
 
     header()
 
-    st.markdown(f"### Question {i+1}/{len(QUESTIONS)}")
-    st.markdown(f"<div style='font-size:26px'>{question}</div>", unsafe_allow_html=True)
+   
+    st.markdown(f"<div style='font-size:26px'>Question {i+1}/{len(QUESTIONS)}</div>", unsafe_allow_html=True)
+    st.markdown(f"### {question}")
+
 
     # Choice flag: None, "edit", or "rer"
     choice_key = f"choice_{i}"
     choice = st.session_state.get(choice_key)
 
+         # ── NEW ► optional live camera preview ───────────────────────────────────
+    video_preview()     # ← one‑liner; place it wherever you like
+
+
     # ----- Recording (initial or after re‑record) -----------------------------
     if f"audio_{i}" not in st.session_state:
-        audio = mic_recorder("🟢🎤 Start Recording", "🔴 Recording…",
-                             use_container_width=True, key=f"rec_{i}")
+        #audio = mic_recorder("🟢🎤 Start Recording", "🔴 Recording…",
+        #                    use_container_width=True, key=f"rec_{i}")
+        audio_key = f"audio_input_{i}"
+        audio = st.audio_input("Record your answer", key=audio_key)    
         if audio:
-            st.audio(audio["bytes"])
-            dur = get_audio_duration(audio["bytes"])
-            st.info(f"You recorded **{int(dur)} s**")
-            if 30 <= dur <= 120:
-                if st.button("📝 Transcribe", key=f"tr_{i}"):
-                    txt = transcribe_audio(audio["bytes"])
+            #st.audio(audio["bytes"])
+            audio_bytes = audio.getvalue()
+            dur = get_audio_duration(audio_bytes)
+            
+            if 30 <= dur <= 180:
+                # if st.button("📝 Transcribe", key=f"tr_{i}"):
+                    with st.spinner("Transcribing your response..."):
+                        txt = transcribe_audio(audio_bytes)
                     st.session_state[f"audio_{i}"] = audio
                     st.session_state[f"text_{i}"]  = txt
                     st.session_state[f"edited_{i}"]   = False
                     st.session_state[f"rer_done_{i}"] = False
                     st.rerun()
             else:
-                st.error("Audio must be 30 – 120 s")
+                st.error(f"You recorded **{int(dur)} s**. Must be in between 30 seconds to 3 minutes. Record you answer again by clicking 🎙️ (mic symbol) on the recorder above")
 
     # ----- Transcript & action selection -------------------------------------
     if f"text_{i}" in st.session_state:
@@ -148,6 +158,9 @@ def interview() -> None:
 # ───── Summary ────────────────────────────────────────────────────────────────
 def summary() -> None:
     st.success("Thanks! Saving your responses …")
+    st.success("Go to this link below (Google Forms) to complete the survey")
+    st.markdown("www.example.link.com")
+  
     save_survey_results(
         user_info       = st.session_state.user,
         set_number      = 3,

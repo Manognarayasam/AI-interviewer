@@ -14,7 +14,7 @@ from custom_css import CUSTOM_CSS
 load_dotenv()
 
 st.set_page_config(page_title="AI Driven Mock Interview", layout="wide")
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+# st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # Session State Setup
 if 'current_question_index' not in st.session_state: st.session_state.current_question_index = 0

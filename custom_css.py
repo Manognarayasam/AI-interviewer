@@ -1,11 +1,21 @@
 #custom_css.py
 CUSTOM_CSS="""
 <style>
-    .main-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
+    # .main-container {
+    #     max-width: 1200px;
+    #     margin: 0 auto;
+    #     padding: 100px;
+    # }
+    .block-container {
+        padding-top: 1rem !important;  /* Reduce top space */
     }
+    /* Optional: tighten up other spacing */
+    .stTextInput, .stButton {
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+
     [data-testid="stCameraInputWebcamStyledBox"] div {
         width: 260px;
         height: 220px;

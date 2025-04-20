@@ -15,7 +15,7 @@ from common_services import get_audio_duration, video_preview
 
 load_dotenv()
 
-st.set_page_config(page_title="AI Feedback Survey", layout="wide")
+st.set_page_config(page_title="Feedback Study", layout="wide")
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # Session State Setup
@@ -51,8 +51,8 @@ def show_registration_page():
 
 def show_interview_page():
     current_q_index = st.session_state.current_question_index
-    st.markdown(f"<h1>Question {current_q_index + 1} of {len(QUESTIONS)}</h1>", unsafe_allow_html=True)
-    st.markdown(f"<p style='font-size: 18px; font-weight: bold;'>{QUESTIONS[current_q_index]}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p> Question {current_q_index + 1} of {len(QUESTIONS)}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='font-weight: bold;'>{QUESTIONS[current_q_index]}</h2>", unsafe_allow_html=True)
 
     video_preview()
    
@@ -73,7 +73,7 @@ def show_interview_page():
         dur_sec = get_audio_duration(audio["bytes"])
         st.info(f"You recorded **{int(dur_sec)} s**")
 
-        if 30 <= dur_sec <= 120:                           # ⟵ gate transcription
+        if 3 <= dur_sec <= 120:                           # ⟵ gate transcription
             if st.button("📝 Transcribe", key=f"tr_{current_q_index}"):
                 with st.spinner("Transcribing…"):
                     try:
@@ -99,7 +99,7 @@ def show_interview_page():
 
                         st.session_state.feedback_summaries[current_q_index] = summary
                         st.success("Summary generated.")
-                        st.markdown(f"**Summary for Question "
+                        st.markdown(f"**Feedback for Question "
                                     f"{current_q_index + 1}:**")
                         st.markdown(f"*{summary}*")
                     except Exception as e:
@@ -115,15 +115,15 @@ def show_interview_page():
                 st.session_state.recorded_audio = None
                 st.rerun()
         else:
-            if st.button("Submit Survey"):
+            if st.button("Submit Study"):
                 st.session_state.page = "summary"
                 st.rerun()
 
 # Summary Page
 
 def show_summary_page():
-    st.markdown("<h1>Thank You for Taking the Feedback Survey!</h1>", unsafe_allow_html=True)
-    with st.spinner("Saving your response..."):
+    st.markdown("<h1>Thank You for completing Study!</h1>", unsafe_allow_html=True)
+    with st.spinner("Go to the next link below to take next study"):
         success = save_survey_results(
             user_info=st.session_state.user_info,
             set_number=1,
@@ -133,21 +133,21 @@ def show_summary_page():
             collection_name=st.session_state.feedback_type
         )
         if success:
-            st.success("Your responses and summaries have been saved successfully!")
+            st.success("Your responses have been saved successfully!")
         else:
             st.error("Oops! Something went wrong while saving.")
 
-    st.markdown("### Combined Summary")
+    st.markdown("### Feedback")
     combined_feedback_text=""
     for i, summary in st.session_state.feedback_summaries.items():
         #st.markdown(f"**Q{i+1}:** *{summary}*")
         combined_feedback_text+=f"**Q{i+1}:** *{summary}* \n"
     st.markdown(f"*{summarizeFeedback(combined_feedback_text)}*")
 
-    if st.button("Start Over"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.rerun()
+    # if st.button("Start Over"):
+    #     for key in list(st.session_state.keys()):
+    #         del st.session_state[key]
+    #     st.rerun()
 
 # Main Entry Point
 

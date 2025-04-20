@@ -11,6 +11,26 @@ hide_streamlit_style = """
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+reduce_top_padding = """
+<style>
+/* 1️⃣ shrink the container’s own padding‑top */
+section.main > div.block-container,
+div.stMainBlockContainer.block-container {
+    padding-top: 0.25rem !important;   /* ← pick any value or 0 */
+}
+
+/* 2️⃣ kill the automatic top margin Streamlit gives the first element */
+div.stVerticalBlock > :first-child {        /* Streamlit ≤1.29 */
+    margin-top: 0 !important;
+}
+/* fallback for newer versions that renamed the class */
+div[data-testid="stVerticalBlock"] > :first-child {
+    margin-top: 0 !important;
+}
+</style>
+"""
+st.markdown(reduce_top_padding, unsafe_allow_html=True)
+
 
 def main() -> None:
     # Pick mode from the query string. Default = 1.

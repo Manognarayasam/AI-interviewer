@@ -22,24 +22,24 @@ def transcribe_audio(audio_bytes):
         
     try:
         print("Inside")
-        # Save audio bytes to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_audio:
-             temp_audio.write(audio_bytes)
-             temp_audio_path = temp_audio.name
+        # # Save audio bytes to a temporary file
+        # with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_audio:
+        #      temp_audio.write(audio_bytes)
+        #      temp_audio_path = temp_audio.name
             
-        # # Send to OpenAI for transcription
-        with open(temp_audio_path, "rb") as audio_file:
-             transcript = client.audio.transcriptions.create(
-                 model="whisper-1",  # Changed from gpt-4o-transcribe to whisper-1
-                 file=audio_file
-             )
+        # # # Send to OpenAI for transcription
+        # with open(temp_audio_path, "rb") as audio_file:
+        #      transcript = client.audio.transcriptions.create(
+        #          model="whisper-1",  # Changed from gpt-4o-transcribe to whisper-1
+        #          file=audio_file
+        #      )
         
-        # # Clean up temporary file
-        os.unlink(temp_audio_path)
-        print(transcript)
-        return transcript.text
+        # # # Clean up temporary file
+        # os.unlink(temp_audio_path)
+        # print(transcript)
+        # return transcript.text
 
-        # return "testing transcribed data"
+        return "testing transcribed data"
         
     except Exception as e:
         st.error(f"Error transcribing audio: {str(e)}")
@@ -207,7 +207,6 @@ def motivationalFeedbackGen(transcription):
     except Exception as e:
         return f"Error occurred: {str(e)}"
     
-
 #Informational Feedback
 def informationalFeedbackGen(question, transcription):
     print("Inside informationalFeedbackGen")
