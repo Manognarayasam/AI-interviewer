@@ -159,7 +159,7 @@ def interview() -> None:
 def summary() -> None:
     st.success("Thanks! Saving your responses …")
     st.success("Go to this link below (Google Forms) to complete the survey")
-    st.markdown("www.example.link.com")
+    st.markdown("https://forms.gle/XJUqoWy7uEKRqWoZ6")
   
     save_survey_results(
         user_info       = st.session_state.user,

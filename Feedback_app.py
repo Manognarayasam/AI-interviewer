@@ -61,23 +61,28 @@ def show_interview_page():
     #audio = mic_recorder(start_prompt="🎙️ Start Recording", stop_prompt="⏹️ Stop Recording", key=f"audio_{current_q_index}")
 
         # --- Record answer -------------------------------------------------------
-    audio = mic_recorder(start_prompt="🎙️ Start Recording",
-                         stop_prompt="⏹️ Stop Recording",
-                         key=f"audio_{current_q_index}")
+    # audio = mic_recorder(start_prompt="🎙️ Start Recording",
+    #                      stop_prompt="⏹️ Stop Recording",
+    #                      key=f"audio_{current_q_index}")
+    
+    # if f"audio_{i}" not in st.session_state:
+    audio_key = f"audio_{current_q_index}"
+    audio = st.audio_input("Record your answer", key=audio_key)
 
     if audio:                                              # user stopped recording
         st.session_state.recorded_audio = audio
-        st.audio(audio["bytes"])
+        audio_bytes = audio.getvalue()
+        #st.audio(audio_bytes)
 
         # 👇 NEW —–––––––––––––––––––––––––––––––––––––––––––––––––––
-        dur_sec = get_audio_duration(audio["bytes"])
+        dur_sec = get_audio_duration(audio_bytes)
         st.info(f"You recorded **{int(dur_sec)} s**")
 
-        if 3 <= dur_sec <= 120:                           # ⟵ gate transcription
+        if 3 <= dur_sec <= 180:                           # ⟵ gate transcription
             if st.button("📝 Transcribe", key=f"tr_{current_q_index}"):
                 with st.spinner("Transcribing…"):
                     try:
-                        text = transcribe_audio(audio["bytes"])
+                        text = transcribe_audio(audio_bytes)
                         st.session_state.answers[current_q_index] = text
                         st.success("Transcription complete.")
 
@@ -105,7 +110,7 @@ def show_interview_page():
                     except Exception as e:
                         st.error(f"Transcription/feedback failed: {e}")
         else:
-            st.error("Recording must be **between 30 s and 2 min**. "
+            st.error("Recording must be **between 30 s and 3 min**. "
                      "Please re‑record.")
 
     if current_q_index in st.session_state.feedback_summaries:
@@ -142,7 +147,22 @@ def show_summary_page():
     for i, summary in st.session_state.feedback_summaries.items():
         #st.markdown(f"**Q{i+1}:** *{summary}*")
         combined_feedback_text+=f"**Q{i+1}:** *{summary}* \n"
-    st.markdown(f"*{summarizeFeedback(combined_feedback_text)}*")
+    #st.markdown(f"*{summarizeFeedback(combined_feedback_text)}*")
+    st.markdown(f"*{summarizeFeedback(combined_feedback_text, st.session_state.feedback_type)}*")
+
+
+
+    st.markdown("---")
+    st.markdown("### Continue to the Next Study")
+
+    if st.session_state.feedback_type == "Feedback1":
+        st.link_button("📘 Fill Informational Feedback Form", "https://forms.gle/9e94ZhVyjDrVQbUb6", type="primary")
+    elif st.session_state.feedback_type == "Feedback2":
+        st.link_button("💡 Fill Motivational Feedback Form", "https://forms.gle/wbFjeCHfvy6idVmf6", type="primary")
+    elif st.session_state.feedback_type == "Feedback3":
+        st.link_button("🔀 Fill Combined Feedback Form", "https://forms.gle/zUkj3gnX6NnUC1RQ8", type="primary")
+
+
 
     # if st.button("Start Over"):
     #     for key in list(st.session_state.keys()):
@@ -171,3 +191,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
