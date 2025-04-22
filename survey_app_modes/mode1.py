@@ -77,7 +77,6 @@ def interview_page() -> None:
     if f"audio_{i}" not in st.session_state:
         audio_key = f"audio_input_{i}"
         audio = st.audio_input("Record your answer", key=audio_key)
-        st.info(f"You recorded **{int(dur)} s**")
 
 
         if audio:
