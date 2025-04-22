@@ -23,10 +23,16 @@ def display_mode_header() -> None:
 # ----- Page 1: registration --------------------------------------------------
 # RFC‑5322–inspired pattern (covers all practical addresses)
 import re
+# EMAIL_RE = re.compile(
+#     r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+"
+#     r"@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*$"
+# )
+
+# General RFC-5322–inspired pattern
 EMAIL_RE = re.compile(
-    r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+"
-    r"@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*$"
+    r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@umbc\.edu$"
 )
+
 
 def registration_page() -> None:
     display_mode_header()
@@ -44,14 +50,12 @@ def registration_page() -> None:
         submitted = st.form_submit_button("Start Interview")
 
         if submitted:
-            # ---------- Validation ----------
             if not name.strip():
                 feedback.error("Please enter your name.")
-            elif not EMAIL_RE.fullmatch(email):
-                feedback.error("Please enter a **valid e‑mail address** "
-                               "(e.g. john.doe@example.com).")
+            elif not EMAIL_RE.fullmatch(email.strip().lower()):
+                feedback.error("Please enter a **valid UMBC email address** "
+                               "(must end in @umbc.edu).")
             else:
-                # ---------- Success path ----------
                 st.session_state.user    = {"name": name.strip(),
                                             "email": email.lower()}
                 st.session_state.page    = "quiz"
@@ -123,7 +127,7 @@ def interview_page() -> None:
                 st.session_state.q += 1
                 st.rerun()
         else:
-            if st.button("Submit"):
+            if st.button("Submit Response"):
                 st.session_state.answers[i] = st.session_state[f"text_{i}"]
                 st.session_state.page = "summary"
                 st.rerun()

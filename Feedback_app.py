@@ -27,23 +27,34 @@ if 'page' not in st.session_state: st.session_state.page = "registration"
 if 'recorded_audio' not in st.session_state: st.session_state.recorded_audio = None
 if 'feedback_type' not in st.session_state: st.session_state.feedback_type = ""
 
-# Registration Page
+import re
+
+# Only allow UMBC emails
+UMBC_EMAIL_RE = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@umbc\.edu$")
 
 def show_registration_page():
     st.markdown("<h1 style='text-align: center;'>AI Driven Mock Interview</h1>", unsafe_allow_html=True)
-    st.warning("Make sure to use your correct email. It will be verified for the payment.")
+    st.warning("Make sure to use your correct UMBC email. It will be verified for the payment.")
+    
     with st.form("registration_form"):
         col1, col2 = st.columns(2)
-        with col1: name = st.text_input("Name")
-        with col2: email = st.text_input("Email")
+        with col1:
+            name = st.text_input("Name")
+        with col2:
+            email = st.text_input("Email")
+        
         submit_button = st.form_submit_button("Start Interview")
+        
         if submit_button:
-            if not name or not email:
+            if not name.strip() or not email.strip():
                 st.error("Please provide both name and email to continue.")
-            elif "@" not in email or "." not in email:
-                st.error("Please provide a valid email address.")
+            elif not UMBC_EMAIL_RE.fullmatch(email.strip().lower()):
+                st.error("Please provide a valid UMBC email address (must end in @umbc.edu).")
             else:
-                st.session_state.user_info = {"name": name, "email": email}
+                st.session_state.user_info = {
+                    "name": name.strip(),
+                    "email": email.strip().lower()
+                }
                 st.session_state.page = "interview"
                 st.rerun()
 
@@ -91,12 +102,12 @@ def show_interview_page():
 
                         # ­‑‑‑ generate feedback exactly as before ­‑‑‑
                         summary = ""
-                        if st.session_state.feedback_type == "Feedback1":
+                        if st.session_state.feedback_type == "Motivational Feedback":
                             summary = motivationalFeedbackGen(text)
-                        elif st.session_state.feedback_type == "Feedback2":
+                        elif st.session_state.feedback_type == "Informational Feedback":
                             summary = informationalFeedbackGen(
                                 QUESTIONS[current_q_index], text)
-                        elif st.session_state.feedback_type == "Feedback3":
+                        elif st.session_state.feedback_type == "Motivational and Informational Feedback":
                             summary = analyze_transcript_feedback_3(
                                 QUESTIONS[current_q_index], text)
                         else:
@@ -120,14 +131,14 @@ def show_interview_page():
                 st.session_state.recorded_audio = None
                 st.rerun()
         else:
-            if st.button("Submit Study"):
+            if st.button("Submit Response"):
                 st.session_state.page = "summary"
                 st.rerun()
 
 # Summary Page
 
 def show_summary_page():
-    st.markdown("<h1>Thank You for completing Study!</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>Thank You for completing the study!</h1>", unsafe_allow_html=True)
     with st.spinner("Go to the next link below to take next study"):
         success = save_survey_results(
             user_info=st.session_state.user_info,
@@ -153,14 +164,14 @@ def show_summary_page():
 
 
     st.markdown("---")
-    st.markdown("### Continue to the Next Study")
+    st.markdown("### Continue to the Post-Task Survey")
 
     if st.session_state.feedback_type == "Feedback1":
-        st.link_button("📘 Fill Informational Feedback Form", "https://forms.gle/9e94ZhVyjDrVQbUb6", type="primary")
+        st.link_button("📘 Provide Your Feedback", "https://forms.gle/9e94ZhVyjDrVQbUb6", type="primary")
     elif st.session_state.feedback_type == "Feedback2":
-        st.link_button("💡 Fill Motivational Feedback Form", "https://forms.gle/wbFjeCHfvy6idVmf6", type="primary")
+        st.link_button("💡 Provide Your Feedback", "https://forms.gle/wbFjeCHfvy6idVmf6", type="primary")
     elif st.session_state.feedback_type == "Feedback3":
-        st.link_button("🔀 Fill Combined Feedback Form", "https://forms.gle/zUkj3gnX6NnUC1RQ8", type="primary")
+        st.link_button("🔀 Provide Your Feedback", "https://forms.gle/zUkj3gnX6NnUC1RQ8", type="primary")
 
 
 

@@ -40,10 +40,10 @@ def get_audio_duration(audio_bytes):
     Calculates the duration of audio from bytes (WAV).
     """
     try:
-        # audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes), format="wav")
-        # duration = len(audio_segment) / 1000.0  # Duration in seconds
-        # return duration
-        return 45
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes), format="wav")
+        duration = len(audio_segment) / 1000.0  # Duration in seconds
+        return duration
+        # return 45
     except Exception as e:
         raise ValueError(f"Error processing audio data: {e}")
 
@@ -72,7 +72,7 @@ def video_preview(width: int | str = 440, height: int | str = 280) -> None:
 
     # --- toggle button ------------------------------------------------------
     if st.button(
-        "🚫 Turn Camera Off" if st.session_state.camera_on else "🎥 Turn Camera On",
+        "🚫 Turn Camera Off" if st.session_state.camera_on else "🎥 Turn Camera On (Optional)",
         key="toggle_cam",
     ):
         st.session_state.camera_on = not st.session_state.camera_on
