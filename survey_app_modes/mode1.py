@@ -88,7 +88,7 @@ def interview_page() -> None:
             audio_bytes = audio.getvalue()
             dur = get_audio_duration(audio_bytes)
             
-            if 30 <= dur <= 120:
+            if 30 <= dur <= 180:
                 #if st.button("📝 Transcribe", key=f"tr_{i}"): #hiding this as i want to automatically transcribe once user stops recording
                     with st.spinner("Transcribing your response..."):
                         txt = transcribe_audio(audio_bytes)
