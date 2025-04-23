@@ -13,11 +13,25 @@ from custom_css import CUSTOM_CSS
 from common_services import get_audio_duration, video_preview
 
 
+
+
+
 load_dotenv()
 
-st.set_page_config(page_title="Feedback Study", layout="wide")
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
+
+st.set_page_config(page_title="Feedback Study", layout="wide")
+# st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+
+
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 # Session State Setup
 if 'current_question_index' not in st.session_state: st.session_state.current_question_index = 0
 if 'answers' not in st.session_state: st.session_state.answers = {}
@@ -62,78 +76,74 @@ def show_registration_page():
 
 def show_interview_page():
     current_q_index = st.session_state.current_question_index
+    st.markdown(f"<h2 style='font-weight: bold;'> {current_q_index + 1}. {QUESTIONS[current_q_index]}</h2>", unsafe_allow_html=True)
     st.markdown(f"<p> Question {current_q_index + 1} of {len(QUESTIONS)}</p>", unsafe_allow_html=True)
-    st.markdown(f"<h2 style='font-weight: bold;'>{QUESTIONS[current_q_index]}</h2>", unsafe_allow_html=True)
 
     video_preview()
-   
 
-    st.markdown("### Record Your Answer (Audio Only)")
-    #audio = mic_recorder(start_prompt="🎙️ Start Recording", stop_prompt="⏹️ Stop Recording", key=f"audio_{current_q_index}")
+    # Only show recorder if transcription has not been completed for this question
+    if current_q_index not in st.session_state.answers:
+        st.markdown("### Record Your Answer (Audio Only)")
+        audio_key = f"audio_{current_q_index}"
+        audio = st.audio_input("Record your answer", key=audio_key)
 
-        # --- Record answer -------------------------------------------------------
-    # audio = mic_recorder(start_prompt="🎙️ Start Recording",
-    #                      stop_prompt="⏹️ Stop Recording",
-    #                      key=f"audio_{current_q_index}")
-    
-    # if f"audio_{i}" not in st.session_state:
-    audio_key = f"audio_{current_q_index}"
-    audio = st.audio_input("Record your answer", key=audio_key)
+        if audio:
+            st.session_state.recorded_audio = audio
+            audio_bytes = audio.getvalue()
+            dur_sec = get_audio_duration(audio_bytes)
+            st.info(f"You recorded **{int(dur_sec)} s**")
 
-    if audio:                                              # user stopped recording
-        st.session_state.recorded_audio = audio
-        audio_bytes = audio.getvalue()
-        #st.audio(audio_bytes)
+            if 3 <= dur_sec <= 180:
+                #if st.button("📝 Transcribe", key=f"tr_{current_q_index}"):
+                    with st.spinner("Transcribing…"):
+                        try:
+                            text = transcribe_audio(audio_bytes)
+                            st.session_state.answers[current_q_index] = text
+                            st.success("Transcription complete.")
+                            st.rerun()  # Hide recorder after transcription
+                        except Exception as e:
+                            st.error(f"Transcription/feedback failed: {e}")
+            else:
+                st.error("Recording must be **between 30 s and 3 min**. Please re‑record.")
 
-        # 👇 NEW —–––––––––––––––––––––––––––––––––––––––––––––––––––
-        dur_sec = get_audio_duration(audio_bytes)
-        st.info(f"You recorded **{int(dur_sec)} s**")
+        return  # Exit early to avoid rendering transcript/feedback before rerun
 
-        if 3 <= dur_sec <= 180:                           # ⟵ gate transcription
-            if st.button("📝 Transcribe", key=f"tr_{current_q_index}"):
-                with st.spinner("Transcribing…"):
-                    try:
-                        text = transcribe_audio(audio_bytes)
-                        st.session_state.answers[current_q_index] = text
-                        st.success("Transcription complete.")
+    # Transcript already exists – show it
+    text = st.session_state.answers[current_q_index]
+    st.markdown("### Transcript (read‑only)")
+    st.text_area("", value=text, disabled=True)
 
-                        st.markdown("### Transcript (read‑only)")
-                        st.text_area("", value=text, disabled=True)
-
-                        # ­‑‑‑ generate feedback exactly as before ­‑‑‑
-                        summary = ""
-                        if st.session_state.feedback_type == "Motivational Feedback":
-                            summary = motivationalFeedbackGen(text)
-                        elif st.session_state.feedback_type == "Informational Feedback":
-                            summary = informationalFeedbackGen(
-                                QUESTIONS[current_q_index], text)
-                        elif st.session_state.feedback_type == "Motivational and Informational Feedback":
-                            summary = analyze_transcript_feedback_3(
-                                QUESTIONS[current_q_index], text)
-                        else:
-                            summary = "You are not on a valid feedback count"
-
-                        st.session_state.feedback_summaries[current_q_index] = summary
-                        st.success("Summary generated.")
-                        st.markdown(f"**Feedback for Question "
-                                    f"{current_q_index + 1}:**")
-                        st.markdown(f"*{summary}*")
-                    except Exception as e:
-                        st.error(f"Transcription/feedback failed: {e}")
+    # Generate feedback if not already done
+    if current_q_index not in st.session_state.feedback_summaries:
+        summary = ""
+        if st.session_state.feedback_type == "Feedback1":
+            summary = motivationalFeedbackGen(text)
+        elif st.session_state.feedback_type == "Feedback2":
+            summary = informationalFeedbackGen(QUESTIONS[current_q_index], text)
+        elif st.session_state.feedback_type == "Feedback3":
+            summary = analyze_transcript_feedback_3(QUESTIONS[current_q_index], text)
         else:
-            st.error("Recording must be **between 30 s and 3 min**. "
-                     "Please re‑record.")
+            summary = "You are not on a valid feedback count"
 
-    if current_q_index in st.session_state.feedback_summaries:
-        if current_q_index < len(QUESTIONS) - 1:
-            if st.button("Next Question ➡️"):
-                st.session_state.current_question_index += 1
-                st.session_state.recorded_audio = None
-                st.rerun()
-        else:
-            if st.button("Submit Response"):
-                st.session_state.page = "summary"
-                st.rerun()
+        st.session_state.feedback_summaries[current_q_index] = summary
+        st.success("Feedback Generated.")
+
+    # Show feedback
+    summary = st.session_state.feedback_summaries[current_q_index]
+    st.markdown(f"**Feedback for Question {current_q_index + 1}:**")
+    st.markdown(f"*{summary}*")
+
+    # Navigation controls
+    if current_q_index < len(QUESTIONS) - 1:
+        if st.button("Next Question ➡️"):
+            st.session_state.current_question_index += 1
+            st.session_state.recorded_audio = None
+            st.rerun()
+    else:
+        if st.button("Submit Response"):
+            st.session_state.page = "summary"
+            st.rerun()
+
 
 # Summary Page
 
@@ -159,9 +169,13 @@ def show_summary_page():
         #st.markdown(f"**Q{i+1}:** *{summary}*")
         combined_feedback_text+=f"**Q{i+1}:** *{summary}* \n"
     #st.markdown(f"*{summarizeFeedback(combined_feedback_text)}*")
-    st.markdown(f"*{summarizeFeedback(combined_feedback_text, st.session_state.feedback_type)}*")
 
-
+    if st.session_state.feedback_type == "Feedback1":
+        st.markdown(f"*{summarizeFeedback(combined_feedback_text, "Motivational Feedback")}*")
+    elif st.session_state.feedback_type == "Feedback2":
+        st.markdown(f"*{summarizeFeedback(combined_feedback_text, "#Informational Feedback")}*")
+    elif st.session_state.feedback_type == "Feedback3":
+        st.markdown(f"*{summarizeFeedback(combined_feedback_text, "Informational and Motivational Feedback")}*")
 
     st.markdown("---")
     st.markdown("### Continue to the Post-Task Survey")
