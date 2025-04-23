@@ -17,8 +17,8 @@ def display_mode_header() -> None:
         "<h1 style='text-align:center;'>AI‑Driven Mock Interview</h1>",
         unsafe_allow_html=True,
     )
-    st.markdown("<h4 style='text-align:center;'>Mode 1 -Edit Once</h4>",
-                unsafe_allow_html=True)
+    # st.markdown("<h4 style='text-align:center;'>Mode 1 -Edit Once</h4>",
+    #             unsafe_allow_html=True)
 
 # ----- Page 1: registration --------------------------------------------------
 # RFC‑5322–inspired pattern (covers all practical addresses)
@@ -134,7 +134,7 @@ def interview_page() -> None:
 
 # ----- Page 3: summary --------------------------------------------------------
 def summary_page() -> None:
-    st.success("Thanks! Saving your responses …")
+    st.success("Thanks ! Your response has been saved")
     st.success("Go to this link below (Google Forms) to complete the survey")
     st.markdown("https://docs.google.com/forms/d/e/1FAIpQLScnct_vlTzO-tK-5tVERsQ1igxxHIXuP0IEDP2KKzI9EV1p8w/viewform")
     save_survey_results(

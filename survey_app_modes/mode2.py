@@ -20,8 +20,8 @@ def header() -> None:
         "<h1 style='text-align:center;'>AI‑Driven Mock Interview</h1>",
         unsafe_allow_html=True,
     )
-    st.markdown("<h4 style='text-align:center;'>Mode 2 – Re‑record Once</h4>",
-                unsafe_allow_html=True)
+    #st.markdown("<h4 style='text-align:center;'>Mode 2 – Re‑record Once</h4>",
+                #unsafe_allow_html=True)
 
 
 # ───── Registration page ──────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ def interview() -> None:
 
 # ───── Summary page ───────────────────────────────────────────────────────────
 def summary() -> None:
-    st.success("Thanks! Saving your responses …")
+    st.success("Thanks ! Your response has been saved")
     st.success("Go to this link below (Google Forms) to complete the survey")
     st.markdown("https://forms.gle/CCiXZSrbBhzvLqHz7")
     save_survey_results(
