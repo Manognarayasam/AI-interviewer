@@ -93,7 +93,7 @@ def show_interview_page():
             dur_sec = get_audio_duration(audio_bytes)
             st.info(f"You recorded **{int(dur_sec)} s**")
 
-            if 3 <= dur_sec <= 180:
+            if 30 <= dur_sec <= 180:
                 #if st.button("📝 Transcribe", key=f"tr_{current_q_index}"):
                     with st.spinner("Transcribing…"):
                         try:
@@ -131,7 +131,9 @@ def show_interview_page():
     # Show feedback
     summary = st.session_state.feedback_summaries[current_q_index]
     st.markdown(f"**Feedback for Question {current_q_index + 1}:**")
-    st.markdown(f"*{summary}*")
+    st.markdown(summary, unsafe_allow_html=True)
+
+
 
     # Navigation controls
     if current_q_index < len(QUESTIONS) - 1:
@@ -173,7 +175,7 @@ def show_summary_page():
     if st.session_state.feedback_type == "Feedback1":
         st.markdown(f"*{summarizeFeedback(combined_feedback_text, "Motivational Feedback")}*")
     elif st.session_state.feedback_type == "Feedback2":
-        st.markdown(f"*{summarizeFeedback(combined_feedback_text, "#Informational Feedback")}*")
+        st.markdown(f"*{summarizeFeedback(combined_feedback_text, "Informational Feedback")}*")
     elif st.session_state.feedback_type == "Feedback3":
         st.markdown(f"*{summarizeFeedback(combined_feedback_text, "Informational and Motivational Feedback")}*")
 

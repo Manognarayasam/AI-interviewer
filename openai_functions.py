@@ -232,7 +232,10 @@ def analyze_transcript_feedback_3(question, transcript):
     print("Inside analyze_transcript_feedback_3")
     feedback_1_response=motivationalFeedbackGen(transcript)
     feedback_2_response=informationalFeedbackGen(question,transcript)
-    return feedback_1_response+"\n"+feedback_2_response
+    return (
+        "<b>Motivational Feedback:</b> " + feedback_1_response + "<br><br>"
+        "<b>Informational Feedback:</b> " + feedback_2_response
+    )
 
 def summarizeFeedback(feedback_text, feedbackType):
     messages = [
